@@ -108,12 +108,16 @@ const PORT = process.env.PORT || 3000;
 // Middlewares
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
-app.use(
-  cors({
-    origin: ENV.CLIENT_URL,
-    credentials: true,
-  })
-);
+// app.use(
+//   cors({
+//     origin: ENV.CLIENT_URL,
+//     credentials: true,
+//   })
+// );
+app.use(cors({
+  origin: "https://real-time-chat-50yz.onrender.com",
+  credentials: true,
+}));
 
 // Routes
 app.use("/api/auth", authRoutes);
