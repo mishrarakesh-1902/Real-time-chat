@@ -11,9 +11,7 @@ import { app, server } from "./lib/socket.js";
 const __dirname = path.resolve();
 const PORT = ENV.PORT || 3000;
 
-/* =====================
-   GLOBAL MIDDLEWARE
-===================== */
+
 app.use(express.json({ limit: "5mb" }));
 app.use(cookieParser());
 
