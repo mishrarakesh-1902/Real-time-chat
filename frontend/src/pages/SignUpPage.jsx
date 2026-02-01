@@ -1,3 +1,4 @@
+// frontend/src/pages/SignUpPage.jsx
 import { useState } from "react";
 import { useAuthStore } from "../store/useAuthStore";
 import BorderAnimatedContainer from "../components/BorderAnimatedContainer";

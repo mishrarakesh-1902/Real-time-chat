@@ -21,6 +21,47 @@
 //   }
 // };
 
+// // backend/src/middleware/auth.middleware.js
+// import jwt from "jsonwebtoken";
+// import User from "../models/User.js";
+// import { ENV } from "../lib/env.js";
+
+// export const protectRoute = async (req, res, next) => {
+//   try {
+//     // ✅ Read JWT from cookies
+//     const token = req.cookies?.jwt;
+
+//     if (!token) {
+//       return res.status(401).json({
+//         message: "Unauthorized - No token provided",
+//       });
+//     }
+
+//     // ✅ Verify token
+//     const decoded = jwt.verify(token, ENV.JWT_SECRET);
+
+//     // ✅ Fetch user
+//     const user = await User.findById(decoded.userId).select("-password");
+
+//     if (!user) {
+//       return res.status(401).json({
+//         message: "Unauthorized - User not found",
+//       });
+//     }
+
+//     // ✅ Attach user to request
+//     req.user = user;
+//     next();
+//   } catch (error) {
+//     console.error("Auth middleware error:", error.message);
+
+//     // ✅ JWT errors must return 401, NOT 500
+//     return res.status(401).json({
+//       message: "Unauthorized - Invalid or expired token",
+//     });
+//   }
+// };
+
 
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
@@ -28,7 +69,15 @@ import { ENV } from "../lib/env.js";
 
 export const protectRoute = async (req, res, next) => {
   try {
-    // ✅ Read JWT from cookies
+    // 🔐 Ensure JWT secret exists
+    if (!ENV.JWT_SECRET) {
+      console.error("❌ JWT_SECRET is not configured");
+      return res.status(500).json({
+        message: "Authentication configuration error",
+      });
+    }
+
+    // 🍪 Read JWT from cookies
     const token = req.cookies?.jwt;
 
     if (!token) {
@@ -37,11 +86,25 @@ export const protectRoute = async (req, res, next) => {
       });
     }
 
-    // ✅ Verify token
-    const decoded = jwt.verify(token, ENV.JWT_SECRET);
+    let decoded;
+    try {
+      decoded = jwt.verify(token, ENV.JWT_SECRET);
+    } catch (err) {
+      if (err.name === "TokenExpiredError") {
+        return res.status(401).json({
+          message: "Unauthorized - Token expired",
+        });
+      }
 
-    // ✅ Fetch user
-    const user = await User.findById(decoded.userId).select("-password");
+      return res.status(401).json({
+        message: "Unauthorized - Invalid token",
+      });
+    }
+
+    // 👤 Fetch user
+    const user = await User.findById(decoded.userId).select(
+      "-password"
+    );
 
     if (!user) {
       return res.status(401).json({
@@ -51,13 +114,15 @@ export const protectRoute = async (req, res, next) => {
 
     // ✅ Attach user to request
     req.user = user;
-    next();
+    return next();
   } catch (error) {
-    console.error("Auth middleware error:", error.message);
+    console.error(
+      "Auth middleware unexpected error:",
+      error
+    );
 
-    // ✅ JWT errors must return 401, NOT 500
-    return res.status(401).json({
-      message: "Unauthorized - Invalid or expired token",
+    return res.status(500).json({
+      message: "Internal server error",
     });
   }
 };
